@@ -1,0 +1,38 @@
+---
+import { getLiveStory, useStoryblokApi, type ISbStoryData } from '@storyblok/astro';
+import StoryblokComponent from '@storyblok/astro/StoryblokComponent.astro';
+
+const isPreview = import.meta.env.STORYBLOK_PREVIEW === 'true';
+
+// Only used by the static production build (ignored in server/preview mode).
+// ponytail: single cdn/links page (max 1000 per_page), paginate if the space grows beyond that.
+export async function getStaticPaths() {
+  const { data } = await useStoryblokApi().get('cdn/links', { version: 'published', per_page: 1000 });
+  const links = Object.values(data.links as Record<string, { slug: string; is_folder: boolean }>);
+  return links
+    .filter((l) => !l.is_folder)
+    .map((l) => ({ params: { slug: l.slug === 'home' ? undefined : l.slug } }));
+}
+
+const slug = Astro.params.slug ?? 'home';
+
+// getLiveStory returns the unsaved editor state during live preview, otherwise null.
+let story = (isPreview ? await getLiveStory(Astro) : null) as ISbStoryData | null;
+if (!story) {
+  const { data } = await useStoryblokApi().get(`cdn/stories/${slug}`, {
+    version: isPreview ? 'draft' : 'published'
+  });
+  story = data.story as ISbStoryData;
+}
+---
+
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    {isPreview && <meta name="robots" content="noindex" />}
+    <title>{story.name}</title>
+  </head>
+  <body>
+    <StoryblokComponent blok={story.content} />
+  </body>
+</html>

@@ -1,0 +1,15 @@
+---
+import { storyblokEditable, type SbBlokData } from '@storyblok/astro';
+import StoryblokComponent from '@storyblok/astro/StoryblokComponent.astro';
+
+interface Props {
+  blok: SbBlokData & { body?: SbBlokData[] };
+}
+
+const { blok } = Astro.props;
+---
+
+<!-- storyblokEditable = click-to-edit in the Visual Editor. Needed on every block component. -->
+<main {...storyblokEditable(blok)}>
+  {blok.body?.map((child) => <StoryblokComponent blok={child} />)}
+</main>
